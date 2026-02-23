@@ -16,11 +16,27 @@ class GaussianCopula:
         if rho_matrix is None:
             self.R = np.eye(n_fights)
         else:
-            self.R = np.array(rho_matrix)
-            assert self.R.shape == (n_fights, n_fights)
+            self.R = np.array(rho_matrix, dtype=float)
+            if self.R.shape != (n_fights, n_fights):
+                raise ValueError(
+                    f"rho_matrix must be ({n_fights}, {n_fights}), "
+                    f"got {self.R.shape}"
+                )
+            if not np.allclose(self.R, self.R.T):
+                raise ValueError("rho_matrix must be symmetric.")
+            if not np.allclose(np.diag(self.R), 1.0):
+                raise ValueError("rho_matrix diagonal entries must all be 1.0.")
 
     def simulate_card(self, fight_probs, n_simulations=10000):
-        L = np.linalg.cholesky(self.R)
+        try:
+            L = np.linalg.cholesky(self.R)
+        except np.linalg.LinAlgError as exc:
+            raise ValueError(
+                "Correlation matrix is not positive-definite; "
+                "cannot perform Cholesky decomposition. "
+                "Ensure all off-diagonal entries satisfy |rho| < 1 "
+                "and the matrix is valid."
+            ) from exc
         Z = np.random.randn(n_simulations, self.n) @ L.T
         U = norm.cdf(Z)
         thresholds = np.array(fight_probs)

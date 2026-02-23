@@ -7,7 +7,14 @@ from datetime import datetime
 
 def parse_bout(bout):
     """Split 'Fighter A vs. Fighter B' into two names."""
+    if not isinstance(bout, str) or not bout:
+        raise ValueError(f"parse_bout expected a non-empty string, got {bout!r}.")
     parts = bout.split(' vs. ')
+    if len(parts) != 2:
+        raise ValueError(
+            f"Cannot parse bout {bout!r}: expected exactly one ' vs. ' separator, "
+            f"found {len(parts) - 1}."
+        )
     return parts[0].strip(), parts[1].strip()
 
 def time_decay_weights(dates, decay_half_life_days=365):

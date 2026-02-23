@@ -2,9 +2,11 @@
 Bradley-Terry model for fighter ratings.
 Layer 1 of the framework.
 """
+import warnings
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
+from scipy.special import expit
 
 class BradleyTerry:
     """
@@ -16,7 +18,8 @@ class BradleyTerry:
         self.fighters = []
 
     def _sigmoid(self, x):
-        return 1 / (1 + np.exp(-x))
+        # expit is numerically stable for extreme values, unlike 1/(1+exp(-x))
+        return expit(x)
 
     def win_probability(self, fighter_a, fighter_b):
         beta_a = self.ratings.get(fighter_a, 0.0)
@@ -47,6 +50,11 @@ class BradleyTerry:
 
         beta_init = np.zeros(n)
         result = minimize(neg_log_likelihood, beta_init, method='L-BFGS-B')
+        if not result.success:
+            warnings.warn(
+                f"Bradley-Terry optimization did not converge: {result.message}. "
+                "Ratings may be unreliable."
+            )
         betas = result.x
         # Center ratings
         betas -= betas.mean()

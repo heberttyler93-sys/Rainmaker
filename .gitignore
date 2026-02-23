@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Test / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Data & outputs (large files; add specific files to track if needed)
+ufc-phase-transition/data/raw/
+ufc-phase-transition/data/processed/
+ufc-phase-transition/outputs/
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_checkpoints
+
+# macOS / editors
+.DS_Store
+.idea/
+.vscode/

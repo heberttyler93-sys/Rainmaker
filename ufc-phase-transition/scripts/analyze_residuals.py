@@ -9,6 +9,7 @@ from src.visualization import plot_variance_vs_fav_prob, plot_conditional_upset
 import os
 
 PROCESSED_DIR = 'data/processed/'
+os.makedirs('outputs', exist_ok=True)
 fights = pd.read_csv(os.path.join(PROCESSED_DIR, 'fights_with_probs.csv'))
 fights['DATE'] = pd.to_datetime(fights['DATE'])
 

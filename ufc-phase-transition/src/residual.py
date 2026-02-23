@@ -12,6 +12,11 @@ class ResidualAnalyzer:
     def __init__(self, predictions, outcomes, metadata=None):
         self.p = np.array(predictions)
         self.o = np.array(outcomes)
+        if len(self.p) != len(self.o):
+            raise ValueError(
+                f"predictions and outcomes must have the same length, "
+                f"got {len(self.p)} and {len(self.o)}."
+            )
         self.residuals = self.p - self.o
         self.meta = metadata
 

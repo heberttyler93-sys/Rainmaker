@@ -29,12 +29,10 @@ for event in unique_events:
         fight_list = list(zip(train_df['winner'], train_df['loser']))
         bt = BradleyTerry()
         bt.fit(fight_list, time_weights=weights)
-        # Predict each fight in current event
-        for idx in fights[event_mask].index:
-            f1 = fights.loc[idx, 'fighter1']
-            f2 = fights.loc[idx, 'fighter2']
-            prob = bt.win_probability(f1, f2)
-            fights.loc[idx, 'p_pred'] = prob
+        # Predict each fight in current event (vectorized)
+        fights.loc[event_mask, 'p_pred'] = fights[event_mask].apply(
+            lambda row: bt.win_probability(row['fighter1'], row['fighter2']), axis=1
+        )
 
 # Save with predictions
 fights.to_csv(os.path.join(PROCESSED_DIR, 'fights_with_probs.csv'), index=False)
