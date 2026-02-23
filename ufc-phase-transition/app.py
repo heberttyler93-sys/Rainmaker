@@ -95,8 +95,48 @@ UFC 296\t2023-12-16\tLas Vegas, Nevada, USA
 UFC 295\t2023-11-11\tNew York, New York, USA"""
 
 
+def _read_uploaded(uploaded_file):
+    """Read an uploaded file, auto-detecting TSV vs CSV separator."""
+    raw_bytes = uploaded_file.read()
+    uploaded_file.seek(0)
+    text = raw_bytes.decode("utf-8", errors="replace")
+    first_line = text.split("\n", 1)[0]
+    sep = "\t" if "\t" in first_line else ","
+    return pd.read_csv(io.StringIO(text), sep=sep)
+
+
+def _validate_fights_columns(df):
+    """Raise a clear error if the DataFrame is missing required fight columns."""
+    required = {"BOUT", "OUTCOME"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(
+            f"Fight results file is missing required column(s): "
+            f"**{', '.join(sorted(missing))}**.\n\n"
+            f"Found columns: `{', '.join(df.columns.tolist())}`.\n\n"
+            f"Make sure you uploaded the **fight results** file (not event details) "
+            f"in the left uploader. Expected columns include: EVENT, BOUT, OUTCOME."
+        )
+
+
+def _validate_events_columns(df):
+    """Raise a clear error if the DataFrame is missing required event columns."""
+    required = {"EVENT", "DATE"}
+    missing = required - set(df.columns)
+    if missing:
+        raise ValueError(
+            f"Event details file is missing required column(s): "
+            f"**{', '.join(sorted(missing))}**.\n\n"
+            f"Found columns: `{', '.join(df.columns.tolist())}`.\n\n"
+            f"Make sure you uploaded the **event details** file (not fight results) "
+            f"in the right uploader. Expected columns include: EVENT, DATE."
+        )
+
+
 def _parse_fights_df(df):
     """Add winner/loser columns from BOUT + OUTCOME columns."""
+    _validate_fights_columns(df)
+    df = df.copy()
     df[["fighter1", "fighter2"]] = df["BOUT"].apply(
         lambda x: pd.Series(parse_bout(x))
     )
@@ -151,13 +191,33 @@ with tab_data:
             )
 
         if up_fights and up_events:
-            raw = pd.read_csv(up_fights, sep="\t")
-            raw = _parse_fights_df(raw)
-            events = pd.read_csv(up_events, sep="\t")
-            events["DATE"] = pd.to_datetime(events["DATE"])
+            try:
+                raw = _read_uploaded(up_fights)
+                raw = _parse_fights_df(raw)
+            except ValueError as e:
+                st.error(str(e))
+                fights = None
+                st.stop()
+
+            try:
+                events = _read_uploaded(up_events)
+                _validate_events_columns(events)
+                events["DATE"] = pd.to_datetime(events["DATE"])
+            except ValueError as e:
+                st.error(str(e))
+                fights = None
+                st.stop()
+
             fights = raw.merge(events[["EVENT", "DATE"]], on="EVENT", how="left")
             fights = fights.dropna(subset=["DATE"]).sort_values("DATE").reset_index(drop=True)
-            st.success(f"Loaded {len(fights)} fights across {fights['EVENT'].nunique()} events.")
+            if len(fights) == 0:
+                st.error(
+                    "No fights matched between the two files. "
+                    "Make sure the **EVENT** column values match across both files."
+                )
+                fights = None
+            else:
+                st.success(f"Loaded {len(fights)} fights across {fights['EVENT'].nunique()} events.")
         else:
             fights = None
             st.info("Upload both files to continue, or switch to sample data.")
