@@ -31,6 +31,10 @@ class BradleyTerry:
         fight_results: list of (winner, loser) tuples
         time_weights: optional array of weights for each fight (e.g., time decay)
         """
+        if len(fight_results) == 0:
+            self.fighters = []
+            self.ratings = {}
+            return self
         self.fighters = list({f for pair in fight_results for f in pair})
         n = len(self.fighters)
         idx = {f: i for i, f in enumerate(self.fighters)}

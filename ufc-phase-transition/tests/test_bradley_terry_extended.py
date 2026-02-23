@@ -31,6 +31,15 @@ def test_win_probability_symmetry():
     assert p_ab + p_ba == pytest.approx(1.0)
 
 
+def test_fit_empty_fight_list():
+    bt = BradleyTerry()
+    bt.fit([])
+    assert bt.ratings == {}
+    assert bt.fighters == []
+    # win_probability still works (defaults to 0.0 for unknown fighters)
+    assert bt.win_probability("A", "B") == pytest.approx(0.5)
+
+
 def test_leaderboard_columns():
     bt = BradleyTerry()
     bt.fit([("A", "B"), ("A", "C"), ("B", "C")])

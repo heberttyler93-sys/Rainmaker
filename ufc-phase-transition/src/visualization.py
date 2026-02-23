@@ -42,14 +42,19 @@ def plot_residual_diagnostics(p, o, residuals, save_path=None):
 def plot_variance_vs_fav_prob(event_stats, save_path=None):
     """Phase transition plot: variance of upsets vs average favorite prob."""
     bins = np.linspace(0.5, 1.0, 11)
+    event_stats = event_stats.copy()
     event_stats['prob_bin'] = pd.cut(event_stats['avg_fav_prob'], bins)
-    bin_summary = event_stats.groupby('prob_bin').agg(
+    bin_summary = event_stats.groupby('prob_bin', observed=False).agg(
         obs_variance=('actual_upsets', 'var'),
         exp_variance=('expected_var', 'mean'),
         n_events=('EVENT', 'size')
     ).reset_index()
-    bin_centers = [(a+b)/2 for a,b in zip(bins[:-1], bins[1:])]
-    bin_summary['bin_center'] = bin_centers[:len(bin_summary)]
+    # Compute bin center from each interval to keep alignment correct
+    bin_summary['bin_center'] = bin_summary['prob_bin'].apply(
+        lambda x: x.mid if pd.notna(x) else np.nan
+    )
+    # Drop bins with no data
+    bin_summary = bin_summary[bin_summary['n_events'] > 0]
 
     plt.figure(figsize=(8,5))
     plt.plot(bin_summary['bin_center'], bin_summary['obs_variance'], 'o-', label='Observed')
@@ -64,7 +69,7 @@ def plot_variance_vs_fav_prob(event_stats, save_path=None):
 
 def plot_conditional_upset(results, save_path=None):
     """Cascade plot: P(upset | number of prior upsets)."""
-    results_sorted = results.sort_values(['EVENT', 'bout_num'])
+    results_sorted = results.sort_values(['EVENT', 'bout_num']).copy()
     results_sorted['prior_upsets'] = results_sorted.groupby('EVENT')['upset'].transform(
         lambda x: x.shift(1).fillna(0).cumsum()
     )
