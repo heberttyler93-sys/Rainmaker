@@ -1,0 +1,10 @@
+run = "streamlit run app.py --server.port 5000 --server.headless true --server.address 0.0.0.0"
+entrypoint = "app.py"
+language = "python3"
+
+[deployment]
+run = ["sh", "-c", "streamlit run app.py --server.port 5000 --server.headless true --server.address 0.0.0.0"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
